@@ -1,7 +1,7 @@
 # r-era5-diss
 r tools for NetCDF4 era5 database analysis
 
-In case others in my dissertation group need to start using R
+In case others on the same database for dissertation need to start using R
 Download R
 Change your r.rpath.windows to the R Path (go to your settings.json and add this:
 "r.rpath.windows": "FILE PATH"
