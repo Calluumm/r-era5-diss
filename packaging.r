@@ -32,7 +32,7 @@ library(RColorBrewer)
 print("Packages Loaded, starting nc load")
 
 # Open the NetCDF file
-nc_file <- "fc8f2337e0cc6e9dafa39b57484565a1.nc"
+nc_file <- "FILE PATH"
 nc_data <- nc_open(nc_file)
 print("nc file loaded")
 
