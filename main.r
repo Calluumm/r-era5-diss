@@ -5,9 +5,9 @@ library(ggplot2)
 source("Functions.r")
 #employ parallel processing this is so slow i might cry
 
-nc_file <- "fc8f2337e0cc6e9dafa39b57484565a1.nc"
-var_name <- "t"
-chunk_size <- 50
+nc_file <- "FILE PATH"
+var_name <- "t" #change to fit targetted variable
+chunk_size <- 50 #change based on what your resources can handle
 
 print("Starting to process the NetCDF file...")
 
