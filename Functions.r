@@ -79,6 +79,9 @@ process_nc_chunks <- function(nc_file, var_name, chunk_size) {
     count <- c(count, dims[-1])    
     chunk <- ncvar_get(nc_data, var_name, start = start, count = count)    
     yearly_averages <- process_chunk(chunk, date_var[start_row:end_row], yearly_averages)
+    if (i == 2) { #for debugging
+      break
+    }
   }
   # Close the NetCDF file
   nc_close(nc_data)
@@ -88,6 +91,8 @@ process_nc_chunks <- function(nc_file, var_name, chunk_size) {
 
 # Function to plot the yearly average temperatures
 plot_yearly_averages <- function(yearly_averages) {
+  valid_years <- !is.na(names(yearly_averages))
+  yearly_averages <- yearly_averages[valid_years]
   df <- data.frame(
     year = as.numeric(names(yearly_averages)),
     temperature = sapply(yearly_averages, mean, na.rm = TRUE)
