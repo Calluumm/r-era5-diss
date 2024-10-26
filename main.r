@@ -13,7 +13,7 @@ mn <- sprintf("0%d",1:1)
 dy <- c(sprintf("0%d",1:9),10:31)
 tm <- 00:00
 are <- "77.22/15.63/77.23/15.64"
-cds.key <- "API KEY"
+cds.key <- "KEY"
 wf_set_key(user ="USERNAME", key = cds.key)
 # ALL THESE VARIABLES ARE EXAMPLES CHANGE BASED ON WHAT YOU WANT#
 
@@ -28,9 +28,13 @@ if (choice == "1") {
   cat("Invalid choice. Continuing without downloading...\n")
 }
 
+#Automatic entry of file path
+file_path <- get_most_recent_nc_file(ph)
+# Manual entry of file path
+#file_path <- paste0(ph, "\\era5_2018_03.nc")
+
 print("Starting to process the NetCDF file...")
-nc_data <- nc_open("FILE PATH")
-# to reference the file you just downloaded you'll want to have this dir *.nc
+nc_data <- nc_open(file_path)
 variables <- names(nc_data$var)
 print(variables)
 
@@ -59,9 +63,10 @@ y = paste(vr)
 plot <- ggplot(df, aes(x = time, y = value)) +
   geom_line() +
   labs(title = title, x = "Time", y = y) +
-  theme_minimal()
+  theme_bw()
 
 filename <- paste0(vr, "plot_", yr, ".png")
 ggsave(filename, plot = plot, width = 10, height = 6, dpi =300)
+print(plot)
 print("saved")
 stop("stopped")
