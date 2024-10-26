@@ -10,6 +10,17 @@ perform_pca <- function(data_matrix) {
   return(pca_result)
 }
 
+# Function to get the most recent .nc file in the file path
+get_most_recent_nc_file <- function(directory) {
+  files <- list.files(directory, pattern = "\\.nc$", full.names = TRUE)
+  if (length(files) == 0) {
+    stop("No .nc files found in the directory.")
+  }
+  file_info <- file.info(files)
+  most_recent_file <- rownames(file_info)[which.max(file_info$mtime)]
+  return(most_recent_file)
+}
+
 library(foreach)
 library(ecmwfr)
 
