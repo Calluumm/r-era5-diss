@@ -13,8 +13,9 @@ perform_pca <- function(data_matrix) {
 library(foreach)
 library(ecmwfr)
 
-# era5 fetch
-download_era5_data <- function(yr, mn, dy, tm, vr, ph, are) {
+# Define the function in Functions.r
+# removed dy while working with monthly averages
+download_era5_land_data <- function(yr, mn, dy, tm, vr, ph, are) {
   for (i in 1:length(yr)) {
     for (j in 1:length(mn)) {
       request <- list(
@@ -28,19 +29,48 @@ download_era5_data <- function(yr, mn, dy, tm, vr, ph, are) {
         "time" = tm,
         "area" = are,
         "format" = "netcdf",
-        "target" = paste0("era5_", yr[i], "_", mn[j], ".nc")
+        "target" = paste0("era5_land_", yr[i], "_", mn[j], "_", vr[1], ".nc")
       )
       
       file <- wf_request(
-        user     = "USERNAME",   # from CDS
-        request  = request,  # request
-        transfer = TRUE,     # downloads
-        path     = ph,       # stores data in ph path
+        user     = "USERNAME",   # username
+        request  = request,  # the request
+        transfer = TRUE,     # download the file
+        path     = ph,       # store data in path
         verbose = TRUE
       )
     }
   }
 }
+
+download_era5_data <- function(yr, mn, tm, vr, ph, are) {
+  for (i in 1:length(yr)) {
+    for (j in 1:length(mn)) {
+      request <- list(
+        "dataset_short_name" = "reanalysis-era5-pressure-levels-monthly-means",
+        "product_type" = "reanalysis",
+        "format" = "netcdf",
+        "variable" = vr[1],
+        "year" = yr[i],
+        "month" = mn[j],
+        "time" = tm,
+        "area" = are,
+        "format" = "netcdf",
+        "target" = paste0("era5_", yr[i], "_", mn[j], "_", vr[1], ".nc")
+      )
+      
+      file <- wf_request(
+        user     = "USERNAME", #username
+        request  = request,  # the request
+        transfer = TRUE,     # download the file
+        path     = ph,       # store data in path
+        verbose = TRUE
+      )
+    }
+  }
+}
+
+
 #svalbard whole area 81/5/75/35
 #Create variable re-name centre
 # to dynamically use plot function I need to add a
