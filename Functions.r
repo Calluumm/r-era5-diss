@@ -10,6 +10,38 @@ perform_pca <- function(data_matrix) {
   return(pca_result)
 }
 
+library(foreach)
+library(ecmwfr)
+
+# era5 fetch
+download_era5_data <- function(yr, mn, dy, tm, vr, ph, are) {
+  for (i in 1:length(yr)) {
+    for (j in 1:length(mn)) {
+      request <- list(
+        "dataset_short_name" = "reanalysis-era5-land",
+        "product_type" = "reanalysis",
+        "format" = "netcdf",
+        "variable" = vr[1],
+        "year" = yr[i],
+        "month" = mn[j],
+        "day" = dy,
+        "time" = tm,
+        "area" = are,
+        "format" = "netcdf",
+        "target" = paste0("era5_", yr[i], "_", mn[j], ".nc")
+      )
+      
+      file <- wf_request(
+        user     = "USERNAME",   # from CDS
+        request  = request,  # request
+        transfer = TRUE,     # downloads
+        path     = ph,       # stores data in ph path
+        verbose = TRUE
+      )
+    }
+  }
+}
+#svalbard whole area 81/5/75/35
 #Create variable re-name centre
 # to dynamically use plot function I need to add a
 # centre for specifying t = temperature, etc...
@@ -79,7 +111,7 @@ process_nc_chunks <- function(nc_file, var_name, chunk_size) {
     count <- c(count, dims[-1])    
     chunk <- ncvar_get(nc_data, var_name, start = start, count = count)    
     yearly_averages <- process_chunk(chunk, date_var[start_row:end_row], yearly_averages)
-    if (i == 2) { #for debugging
+    if (i == 1) { #for debugging
       break
     }
   }
@@ -98,20 +130,25 @@ plot_yearly_averages <- function(yearly_averages) {
     temperature = sapply(yearly_averages, mean, na.rm = TRUE)
   )
   print("Yearly averages data frame:")
-  print(df)  
+  print(df)
   if (nrow(df) == 0) {
     print("Data frame is empty. No data to plot.")
     return(NULL)
   }
-  # Create the line graph
+
+  # Create the line graph with white background and specified y-axis range
   p <- ggplot(df, aes(x = year, y = temperature)) +
     geom_line() +
     labs(title = "Yearly Average Temperature", x = "Year", y = "Temperature") +
-    theme_minimal()
+    theme_minimal(base_size = 15) +
+    theme(panel.background = element_rect(fill = "white", color = NA)) +
+    scale_y_continuous(limits = c(y_min, y_max))
+
   print("Plotting the graph...")
   print(p)
+
   # Save the plot to a file
   ggsave("yearly_average_temperature.png", plot = p)
-  
+
   return(p)
 }
