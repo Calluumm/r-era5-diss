@@ -1,4 +1,7 @@
-# dataset# variables
+### Store of Variables ###
+# Not fully filled out you may need to add some that I havent got round to
+# variable_mappings is a list of the variables in the dataset and their corresponding names in the NetCDF file
+# variable_units is a list of the variables in the dataset and their units
 variable_mappings <- list(
     divergence = "d",
     fraction_of_cloud_cover = "cc",
@@ -66,6 +69,36 @@ variable_mappings <- list(
     total_precipitation = "",
     leaf_area_index_high_vegetation = "",
     leaf_area_index_low_vegetation = ""
+)
+
+variable_units <- list(
+    divergence = "s⁻¹",
+    fraction_of_cloud_cover = "%",
+    geopotential = "m²/s²",
+    ozone_mass_mixing_ratio = "kg/kg",
+    potential_vorticity = "K m²/kg/s",
+    relative_humidity = "%",
+    specific_cloud_ice_water_content = "kg/kg",
+    specific_cloud_liquid_water_content = "kg/kg",
+    specific_humidity = "kg/kg",
+    specific_rain_water_content = "kg/kg",
+    specific_snow_water_content = "kg/kg",
+    temperature = "K",
+    u_component_of_wind = "m/s",
+    v_component_of_wind = "m/s",
+    vertical_velocity = "Pa/s",
+    vorticity = "s⁻¹",
+    "2m_dewpoint_temperature" = "K",
+    "2m_temperature" = "K",
+    skin_temperature = "K",
+    soil_temperature_level_1 = "K",
+    soil_temperature_level_2 = "K",
+    soil_temperature_level_3 = "K",
+    soil_temperature_level_4 = "K",
+    lake_bottom_temperature = "K",
+    lake_ice_depth = "m",
+    lake_ice_temperature = "K",
+    lake_mix_layer_depth = "m"
 )
 ######### dataset 1
 ##"reanalysis-era5-pressure-levels-monthly-means"
