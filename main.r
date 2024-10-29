@@ -87,12 +87,10 @@ if (plot_choice == 1) {
     sd_factor <- as.numeric(readLines(con = stdin(), n = 1))
   }
   plot <- plot_sd(df, title, y_label, include_sd, sd_factor)
+}else if (plot_choice == 4) {
+  plot <- plot_shapefile(file_path, vr)
 } else {
   stop("Invalid plot choice.")
 }
 
-filename <- paste0(vr, "plot_", yrs, ".png")
-ggsave(filename, plot = plot, width = 10, height = 6, dpi =300)
-print(plot)
-print("saved")
 stop("stopped")
