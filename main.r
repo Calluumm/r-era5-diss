@@ -17,6 +17,7 @@ tm <- "00:00"
 are <- "77.22/15.63/77.23/15.64"
 cds.key <- "API KEY"
 wf_set_key(user ="USERNAME", key = cds.key)
+nc_file_path2 <- "direct path to a second nc_file for comparative plots"
 # ALL THESE VARIABLES ARE EXAMPLES CHANGE BASED ON WHAT YOU WANT#
 # land data only takes 1 year/1 month but variable days
 
@@ -61,7 +62,7 @@ retrieved_data <- ncvar_get(nc_data, variable_mappings[[vr]])
 nc_close(nc_data)
 df <- data.frame(time = valid_time_subset, value = retrieved_data)
 
-cat("Choose plot type:\n1. Line Plot\n2. Smooth Plot\n3. SD Yearly Plot")
+cat("Choose plot type:\n1. Line Plot\n2. Smooth Plot\n3. SD Yearly Plot \n4. Shapefile Plot (only for temperature/single timeframes right now)\n5. Plot shapefile difference between 2 timeframes\n")
 plot_choice <- as.integer(readLines(con = stdin(), n = 1))
 
 
@@ -72,7 +73,6 @@ if (is.null(unit)) {
 }
 y_label <- paste(vr, "(", unit, ")", sep="")
 
-# Call the appropriate plotting function
 if (plot_choice == 1) {
   plot <- plot_line(df, title, y_label)
 } else if (plot_choice == 2) {
@@ -89,8 +89,12 @@ if (plot_choice == 1) {
   plot <- plot_sd(df, title, y_label, include_sd, sd_factor)
 }else if (plot_choice == 4) {
   plot <- plot_shapefile(file_path, vr)
+}else if (plot_choice == 5) {
+  plot <- plot_shapefile_difference(file_path, nc_file_path2, vr)
 } else {
   stop("Invalid plot choice.")
 }
 
+print(plot)
 stop("stopped")
+
