@@ -84,8 +84,8 @@ plot_sd <- function(df, title, y_label, include_sd = TRUE, sd_factor = 1) {
   print("saved")
 }
 
-plot_shapefile <- function(nc_file_path, vr) {
-  nc_data <- nc_open(nc_file_path)
+plot_shapefile <- function(file_path, vr) {
+  nc_data <- nc_open(file_path)
     lat <- ncvar_get(nc_data, "latitude")
   lon <- ncvar_get(nc_data, "longitude")
   retrieved_data <- ncvar_get(nc_data, variable_mappings[[vr]])
@@ -121,8 +121,55 @@ plot_shapefile <- function(nc_file_path, vr) {
     coord_sf(xlim = range(lon), ylim = range(lat), expand = FALSE) +
     theme_minimal()
   
-  filename <- paste0(vr, "_shapefileplot.png")
+  filename <- paste0(vr, "_shapefileplot_average.png")
   ggsave(filename, plot = plot, width = 10, height = 6, dpi = 300)
   print(plot)
+  print("saved")
+}
+
+
+plot_shapefile_difference <- function(file_path, nc_file_path2, vr) {
+  # one
+  nc_data1 <- nc_open(file_path)
+  lat1 <- ncvar_get(nc_data1, "latitude")
+  lon1 <- ncvar_get(nc_data1, "longitude")
+  retrieved_data1 <- ncvar_get(nc_data1, variable_mappings[[vr]])
+  nc_close(nc_data1)
+  #two
+  nc_data2 <- nc_open(nc_file_path2)
+  lat2 <- ncvar_get(nc_data2, "latitude")
+  lon2 <- ncvar_get(nc_data2, "longitude")
+  retrieved_data2 <- ncvar_get(nc_data2, variable_mappings[[vr]])
+  nc_close(nc_data2)
+  
+  if (!all(dim(retrieved_data1) == dim(retrieved_data2))) {
+    stop("Error: The dimensions of the two datasets do not match")
+  }
+  
+  data_diff <- retrieved_data2 - retrieved_data1
+  
+  if (length(dim(data_diff)) == 3) {
+    data_diff <- data_diff[,,1]
+  } else if (length(dim(data_diff)) == 2) {
+    data_diff <- data_diff
+  } else {
+    stop("Error: data_diff does not have the expected number of dimensions")
+  }
+  
+  data <- expand.grid(lon = lon1, lat = lat1)
+  data$variable <- as.vector(data_diff)
+  data <- na.omit(data)
+  lon <- lon1
+  lat <- lat1
+  p <- ggplot(data, aes(x = lon, y = lat, fill = variable)) +
+    geom_tile() +
+    borders(database = "world", regions = ".", fill = NA, colour = "grey50") +
+    coord_sf(xlim = range(lon), ylim = range(lat), expand = FALSE) +
+    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+    labs(title = paste("Difference in", vr, "between two times"),
+         x = "Longitude", y = "Latitude", fill = vr)
+  
+  ggsave(filename = paste0("difference_in_", vr,".png"), plot = p, width = 10, height = 6, dpi = 300)
+  print(p)
   print("saved")
 }
