@@ -5,6 +5,7 @@ library(sf)
 library(viridis)
 library(ncdf4)
 source("variables.r")
+source("Functions.r")
 library(terra)
 library(ggspatial)
 library(basemaps)
@@ -170,6 +171,108 @@ plot_shapefile_difference <- function(file_path, nc_file_path2, vr) {
          x = "Longitude", y = "Latitude", fill = vr)
   
   ggsave(filename = paste0("difference_in_", vr,".png"), plot = p, width = 10, height = 6, dpi = 300)
+  print(p)
+  print("saved")
+}
+
+plot_shapefile_ranged <- function(file_path, vr, start_decade1, start_decade2) {
+  nc_data <- nc_open(file_path)
+  lat <- ncvar_get(nc_data, "latitude")
+  lon <- ncvar_get(nc_data, "longitude")
+  date <- ncvar_get(nc_data, "date")
+  years <- as.integer(substr(date, 1, 4))
+  
+  variable <- variable_mappings[[vr]]
+  if (is.null(variable)) {
+    stop(paste("Variable", vr, "not found in variable_mappings"))
+  }
+  
+  var_data <- ncvar_get(nc_data, variable)
+  var_dims <- dim(var_data)
+  print(paste("Dimensions of variable", vr, ":", paste(var_dims, collapse = " x ")))
+  
+  avg_data1 <- calculate_average(nc_data, variable, start_decade1, start_decade1 + 9)
+  avg_data2 <- calculate_average(nc_data, variable, start_decade2, start_decade2 + 9)
+  diff_data <- avg_data2 - avg_data1
+  
+  # Debug prints
+  print(paste("Latitude length:", length(lat)))
+  print(paste("Longitude length:", length(lon)))
+  print(paste("avg_data1 dimensions:", dim(avg_data1)))
+  print(paste("avg_data2 dimensions:", dim(avg_data2)))
+  print(paste("diff_data dimensions:", dim(diff_data)))
+  
+  if (is.vector(diff_data)) {
+    diff_data <- matrix(diff_data, nrow = length(lat), ncol = length(lon))
+  }
+  
+  # Debug print after reshaping
+  print(paste("Reshaped diff_data dimensions:", dim(diff_data)))
+  
+  data <- expand.grid(lon = lon, lat = lat)
+  data$variable <- as.vector(diff_data)
+  
+  p <- ggplot(data, aes(x = lon, y = lat, fill = variable)) +
+    geom_tile() +
+    borders(
+      database = "world",
+      regions = ".",
+      fill = NA,
+      colour = "grey50",
+      xlim = range(lon),
+      ylim = range(lat)
+    ) +
+    scale_fill_viridis_c() +
+    coord_sf(xlim = range(lon), ylim = range(lat), expand = FALSE) +
+    labs(title = paste("Difference in", vr, "between", start_decade1, "and", start_decade2),
+         x = "Longitude", y = "Latitude")
+    coord_fixed(ratio = 1)  # Ensure the aspect ratio is fixed
+
+  
+  print(p)
+  nc_close(nc_data)
+  ggsave(filename = paste0("Difference in", vr, "between", start_decade1, "and", start_decade2,".png"), plot = p, width = 10, height = 6, dpi = 300)
+  return(p)
+}
+
+plot_entire_average <- function(file_path, vr) {
+  nc_data <- nc_open(file_path)
+  lat <- ncvar_get(nc_data, "latitude")
+  lon <- ncvar_get(nc_data, "longitude")
+  date <- ncvar_get(nc_data, "date")
+  years <- as.integer(substr(date, 1, 4))
+  avg_data <- calculate_average(nc_data, variable_mappings[[vr]], min(years), max(years))
+  nc_close(nc_data)
+  
+  # Ensure avg_data has the correct dimensions
+  if (length(avg_data) != length(lat) * length(lon)) {
+    stop("Dimensions of avg_data do not match the grid defined by lat and lon")
+  }
+  
+  # Create a data frame for ggplot
+  plot_data <- expand.grid(lon = lon, lat = lat)
+  plot_data$avg_data <- as.vector(avg_data)
+  
+  p <- ggplot(plot_data) +
+    geom_raster(aes(x = lon, y = lat, fill = avg_data)) +
+    scale_fill_gradientn(
+      colors = c("blue", "cyan", "yellow", "red"),
+      values = scales::rescale(c(min(plot_data$avg_data), mean(plot_data$avg_data), max(plot_data$avg_data))),
+      na.value = "grey50"
+    ) +
+    borders(
+      database = "world",
+      regions = ".",
+      fill = NA,
+      colour = "grey50",
+      xlim = range(lon),
+      ylim = range(lat)
+    ) +
+    coord_fixed(xlim = range(lon), ylim = range(lat)) +
+    labs(title = paste("Average", vr, "for entire dataset"),
+         x = "Longitude", y = "Latitude", fill = vr)
+  
+  ggsave(filename = paste0("average_", vr, ".png"), plot = p, width = 10, height = 6, dpi = 300)
   print(p)
   print("saved")
 }
