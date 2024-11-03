@@ -10,7 +10,10 @@ perform_pca <- function(data_matrix) {
   return(pca_result)
 }
 
-# Function to get the most recent .nc file in the file path
+library(foreach)
+library(ecmwfr)
+
+# Function to get the most recent .nc file in the directory
 get_most_recent_nc_file <- function(directory) {
   files <- list.files(directory, pattern = "\\.nc$", full.names = TRUE)
   if (length(files) == 0) {
@@ -21,65 +24,62 @@ get_most_recent_nc_file <- function(directory) {
   return(most_recent_file)
 }
 
-library(foreach)
-library(ecmwfr)
-
 # Define the function in Functions.r
 # removed dy while working with monthly averages
-download_era5_land_data <- function(yr, mn, dy, tm, vr, ph, are) {
-  for (i in 1:length(yr)) {
+download_era5_land_data <- function(yrs, mn, dy, tm, vr, ph, are) {
+  for (i in 1:length(yrs)) {
     for (j in 1:length(mn)) {
       request <- list(
         "dataset_short_name" = "reanalysis-era5-land",
         "product_type" = "reanalysis",
         "format" = "netcdf",
         "variable" = vr[1],
-        "year" = yr[i],
+        "year" = yrs[i],
         "month" = mn[j],
         "day" = dy,
         "time" = tm,
         "area" = are,
         "format" = "netcdf",
-        "target" = paste0("era5_land_", yr[i], "_", mn[j], "_", vr[1], ".nc")
+        "target" = paste0("era5_land_", yrs[i], "_", mn[j], "_", vr[1], ".nc")
       )
       
       file <- wf_request(
-        user     = "USERNAME",   # username
+        user     = "USERNAME",   # user ID (for authentification)
         request  = request,  # the request
         transfer = TRUE,     # download the file
-        path     = ph,       # store data in path
+        path     = ph,       # store data in current working directory
         verbose = TRUE
       )
     }
   }
 }
 
-download_era5_data <- function(yr, mn, tm, vr, ph, are) {
-  for (i in 1:length(yr)) {
-    for (j in 1:length(mn)) {
-      request <- list(
-        "dataset_short_name" = "reanalysis-era5-pressure-levels-monthly-means",
-        "product_type" = "reanalysis",
-        "format" = "netcdf",
-        "variable" = vr[1],
-        "year" = yr[i],
-        "month" = mn[j],
-        "time" = tm,
-        "area" = are,
-        "format" = "netcdf",
-        "target" = paste0("era5_", yr[i], "_", mn[j], "_", vr[1], ".nc")
-      )
-      
-      file <- wf_request(
-        user     = "USERNAME", #username
-        request  = request,  # the request
-        transfer = TRUE,     # download the file
-        path     = ph,       # store data in path
-        verbose = TRUE
-      )
-    }
-  }
+
+
+download_era5_data <- function(yrs, mn, tm, vr, ph, are) {
+  request <- list(
+    "dataset_short_name" = "reanalysis-era5-pressure-levels-monthly-means",
+    "product_type" = "reanalysis",
+    "format" = "netcdf",
+    "variable" = vr[1],
+    "year" = yrs[i],
+    "month" = mn[j],
+    "time" = tm,
+    "area" = are,
+    "format" = "netcdf",
+    "target" = paste0("era5_", yrs[i], "_", mn[j], "_", vr[1], ".nc")
+  )
+  
+  file <- wf_request(
+    user     = "USERNAME",   # user ID (for authentification)
+    request  = request,  # the request
+    transfer = TRUE,     # download the file
+    path     = ph,       # store data in current working directory
+    verbose = TRUE
+  )
 }
+
+
 
 
 #svalbard whole area 81/5/75/35
@@ -192,4 +192,27 @@ plot_yearly_averages <- function(yearly_averages) {
   ggsave("yearly_average_temperature.png", plot = p)
 
   return(p)
+}
+
+calculate_average <- function(nc_data, variable, start_year, end_year) {
+  date <- ncvar_get(nc_data, "date")
+  years <- as.integer(substr(date, 1, 4))
+  indices <- which(years >= start_year & years <= end_year)
+  var_data <- ncvar_get(nc_data, variable)
+  var_dims <- dim(var_data)
+  
+  if (length(var_dims) == 1) {
+    data <- var_data[indices]
+    avg_data <- mean(data, na.rm = TRUE)
+    print(paste("1D Average Data:", avg_data))
+  } else if (length(var_dims) == 3) {
+    data <- var_data[,,indices]
+    avg_data <- apply(data, c(1, 2), mean, na.rm = TRUE)
+  } else if (length(var_dims) == 2) {
+    avg_data <- var_data
+  } else {
+    stop(paste("Variable", variable, "does not have 1, 2, or 3 dimensions"))
+  }
+  
+  return(avg_data)
 }
