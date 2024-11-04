@@ -60,16 +60,23 @@ if (!vr %in% names(variable_mappings)) {
 }
 retrieved_data <- ncvar_get(nc_data, variable_mappings[[vr]])
 
-# Check if the retrieved data has a time dimension
-if (length(dim(retrieved_data)) == 3) {
-  # If it has a time dimension, reshape the data to associate each data point with the correct timestamp
-  retrieved_data <- array(retrieved_data, dim = c(dim(retrieved_data)[1] * dim(retrieved_data)[2], dim(retrieved_data)[3]))
-  valid_time_subset <- rep(valid_time, each = dim(retrieved_data)[1])
-} else if (length(dim(retrieved_data)) == 2) {
-  # If it has no time dimension, use the data as is
-  retrieved_data <- retrieved_data
-} else {
-  stop("Error: retrieved_data does not have the expected number of dimensions")
+if (variable_mappings[[vr]] == "t") {
+  retrieved_data <- retrieved_data - 273.15
+  print("Converted temperature from Kelvin to Celsius.")
+}
+
+datefixer <- readline(prompt = "Does the file provided need date fixings?\n Applicable to non single point datasets\n yes/no \n")
+if (datefixer == "yes") {
+  if (length(dim(retrieved_data)) == 3) {
+    retrieved_data <- array(retrieved_data, dim = c(dim(retrieved_data)[1] * dim(retrieved_data)[2], dim(retrieved_data)[3]))
+    valid_time_subset <- rep(valid_time, each = dim(retrieved_data)[1])
+  } else if (length(dim(retrieved_data)) == 2) {
+    retrieved_data <- retrieved_data
+  } else {
+    stop("Error: retrieved_data does not have the expected number of dimensions")
+  }
+} else if (datefixer == "no") {
+  print("Continuing without date fixings...")
 }
 
 nc_close(nc_data)
