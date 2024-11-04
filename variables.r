@@ -83,7 +83,7 @@ variable_units <- list(
     specific_humidity = "kg/kg",
     specific_rain_water_content = "kg/kg",
     specific_snow_water_content = "kg/kg",
-    temperature = "K",
+    temperature = "C",
     u_component_of_wind = "m/s",
     v_component_of_wind = "m/s",
     vertical_velocity = "Pa/s",
