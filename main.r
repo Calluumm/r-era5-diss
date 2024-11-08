@@ -8,16 +8,22 @@ source("variables.r")
 source("plotter.r")
 #employ parallel processing this is so slow i might cry
 
-ph <- "FILE_PATH"
-vr <- c("temperature")
+ph <- "FILE PATH"
+vr <- c("v_component_of_wind") #reference variables for help
 yrs <- 2024
 mn <- sprintf("0%d",5:5)
 dy <- c(sprintf("0%d",1:9),10:31)
 tm <- "00:00"
 are <- "77.22/15.63/77.23/15.64"
-cds.key <- "API KEY"
-wf_set_key(user ="USERNAME", key = cds.key)
-nc_file_path2 <- "SECONDARY NCDF FILE PATH"
+cds.key <- "KEY"
+wf_set_key(user ="USER", key = cds.key)
+nc_file_path2 <- "ALT FILE PATH"
+#Set the following values to NULL if your dataset already represents what you want to see; these exist to refine it further
+lat_min <- 76
+lat_max <- 81
+lon_min <- 9
+lon_max <- 29
+# svalbard values 76/81/9/29 S/N/W/E
 # ALL THESE VARIABLES ARE EXAMPLES CHANGE BASED ON WHAT YOU WANT#
 # land data only takes 1 year/1 month but variable days
 
@@ -36,7 +42,7 @@ if (choice == "1") {
 #Automatic entry of file path
 #file_path <- get_most_recent_nc_file(ph)
 # Manual entry of file path
-file_path <- paste0(ph, "\\MANUAL NCDF.nc")
+file_path <- paste0(ph, "\\MANUAL FILE")
 
 print("Starting to process the NetCDF file...")
 nc_data <- nc_open(file_path)
@@ -58,19 +64,43 @@ valid_time_subset <- valid_time
 if (!vr %in% names(variable_mappings)) {
   stop("Invalid variable name. Please check the variable_mappings.")
 }
-retrieved_data <- ncvar_get(nc_data, variable_mappings[[vr]])
+
+if (vr == "u_component_of_wind" || vr == "v_component_of_wind") {
+  cat("Choose an option:\n1. Continue without creating a combined u/v vector\n2. Plot a single timeframe with a u/v vector\n3. Create an average u/v vector plot\n4. A line graph of wind magnitude overtime \n")
+  uv_choice <- as.integer(readLines(con = stdin(), n = 1))
+  if (uv_choice == 1) {
+    print("Continuing without creating a combined u/v vector")
+  } else if (uv_choice == 2) {
+    plot <- plot_wind_single(file_path, vr, lat_min, lat_max, lon_min, lon_max)
+    print(p)
+    stop()
+  } else if (uv_choice == 3) {
+    #plot_wind_average(file_path, vr)
+    #print(plot)
+    stop("Being Worked on")
+  } else if (uv_choice == 4) {
+    plot_wind_sd(file_path, vr)
+    print(plot)
+    stop()
+  } else {
+    stop("Invalid choice. Please select a valid option.")
+  }
+}
 
 if (variable_mappings[[vr]] == "t") {
   retrieved_data <- retrieved_data - 273.15
   print("Converted temperature from Kelvin to Celsius.")
 }
 
+
 datefixer <- readline(prompt = "Does the file provided need date fixings?\n Applicable to non single point datasets\n yes/no \n")
 if (datefixer == "yes") {
   if (length(dim(retrieved_data)) == 3) {
+    # If it has a time dimension, reshape the data to associate each data point with the correct timestamp
     retrieved_data <- array(retrieved_data, dim = c(dim(retrieved_data)[1] * dim(retrieved_data)[2], dim(retrieved_data)[3]))
     valid_time_subset <- rep(valid_time, each = dim(retrieved_data)[1])
   } else if (length(dim(retrieved_data)) == 2) {
+    # If it has no time dimension, use the data as is
     retrieved_data <- retrieved_data
   } else {
     stop("Error: retrieved_data does not have the expected number of dimensions")
