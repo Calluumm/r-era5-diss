@@ -9,8 +9,8 @@ library(maps)
 library(mapdata)
 library(viridis)
 
-ph <- "C:/Users/Student/Desktop/Dissertation/Data related/data-raw"
-file_path <- paste0(ph, "/FULLAREA_FEB_U_V_1940-2024.nc")
+ph <- "PATH"
+file_path <- paste0(ph, "NAME")
 nc_data <- nc_open(file_path)
 
 
