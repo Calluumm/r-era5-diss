@@ -37,7 +37,7 @@ variable_mappings <- list(
     snow_cover = "snc",
     snow_density = "rsn",
     snow_depth = "sd",
-    snow_depth_water_equivalent = "",
+    snow_depth_water_equivalent = "", #below to be filled
     snowfall = "",
     snowmelt = "",
     temperature_of_snow_layer = "",
