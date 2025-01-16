@@ -14,7 +14,7 @@ library(sp)
 
 basemaps::set_defaults(map_service = "esri", map_type = "world_imagery")
 
-# Function to list variables in a NetCDF file
+# Function to list variables in a NetCDF file, debug tool primarily
 list_nc_variables <- function(nc_file_path) {
   nc_data <- nc_open(nc_file_path)
   variables <- names(nc_data$var)
@@ -198,12 +198,12 @@ plot_shapefile_ranged <- function(file_path, vr, start_decade1, start_decade2) {
   avg_data2 <- calculate_average(nc_data, variable, start_decade2, start_decade2 + 9)
   diff_data <- avg_data2 - avg_data1
   
-  # Debug prints
-  print(paste("Latitude length:", length(lat)))
-  print(paste("Longitude length:", length(lon)))
-  print(paste("avg_data1 dimensions:", dim(avg_data1)))
-  print(paste("avg_data2 dimensions:", dim(avg_data2)))
-  print(paste("diff_data dimensions:", dim(diff_data)))
+  # Debug prints, remove comment when debugging
+  #print(paste("Latitude length:", length(lat)))
+  #print(paste("Longitude length:", length(lon)))
+  #print(paste("avg_data1 dimensions:", dim(avg_data1)))
+  #print(paste("avg_data2 dimensions:", dim(avg_data2)))
+  #print(paste("diff_data dimensions:", dim(diff_data)))
   
   if (is.vector(diff_data)) {
     diff_data <- matrix(diff_data, nrow = length(lat), ncol = length(lon))
@@ -248,12 +248,11 @@ plot_entire_average <- function(file_path, vr) {
   avg_data <- calculate_average(nc_data, variable_mappings[[vr]], min(years), max(years))
   nc_close(nc_data)
   
-  # Ensure avg_data has the correct dimensions
+  # Debug check for correct dimensions
   if (length(avg_data) != length(lat) * length(lon)) {
     stop("Dimensions of avg_data do not match the grid defined by lat and lon")
   }
   
-  # Create a data frame for ggplot
   plot_data <- expand.grid(lon = lon, lat = lat)
   plot_data$avg_data <- as.vector(avg_data)
   
@@ -285,7 +284,6 @@ plot_entire_average <- function(file_path, vr) {
 plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) {
   nc_data <- nc_open(file_path)
   
-  # Use the correct variable names from variable_mappings
   u_var <- variable_mappings[["u_component_of_wind"]]
   v_var <- variable_mappings[["v_component_of_wind"]]
   
@@ -294,19 +292,14 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
   lon <- ncvar_get(nc_data, "longitude")
   lat <- ncvar_get(nc_data, "latitude")
   
-  # Calculate the wind speed magnitude
   wind_speed <- sqrt(u_component^2 + v_component^2)
   
-  # Create a data frame for plotting
   data <- expand.grid(lon = lon, lat = lat)
   data$u_component <- as.vector(u_component)
   data$v_component <- as.vector(v_component)
   data$wind_speed <- as.vector(wind_speed)
-  
-  # Close the NetCDF file
   nc_close(nc_data)
-  
-  # Apply latitude and longitude limits if they are not NULL
+  #error checkpoints
   if (!is.null(lat_min) && !is.null(lat_max)) {
     data <- data[data$lat >= lat_min & data$lat <= lat_max, ]
   }
@@ -314,7 +307,6 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
     data <- data[data$lon >= lon_min & data$lon <= lon_max, ]
   }
   
-  # Plot the wind speed magnitude
   p <- ggplot(data, aes(x = lon, y = lat, fill = wind_speed)) +
     geom_tile() +
     borders(
@@ -341,7 +333,7 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
       plot.margin = unit(c(0, 0, 0, 0), "cm")
     )
   # Reduce the arrow frequency by averaging nearby arrows
-  grid_size <- 1  # Adjust this value as needed
+  grid_size <- 1  # Adjust this value to fit map aesthetic 
   arrow_data <- data %>%
     mutate(
       lon_bin = cut(lon, breaks = seq(min(lon), max(lon), by = grid_size)),
@@ -358,10 +350,10 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
     ungroup()
   
   # Scale arrow lengths by wind speed
-  arrow_scale <- 0.1  # Adjust this value as needed
+  arrow_scale <- 0.1  # Adjust this value to fit map layout n stuff
   p <- p + geom_segment(data = arrow_data, aes(x = lon, y = lat, xend = lon + u_component * arrow_scale, yend = lat + v_component * arrow_scale, size = wind_speed),
                         arrow = arrow(length = unit(0.2, "cm")), color = "black", show.legend = TRUE) +
-    scale_size_continuous(name = "Wind Speed", range = c(0.1, 1))  # Adjust the range as needed
+    scale_size_continuous(name = "Wind Speed", range = c(0.1, 1))  # Adjust the range to fit aesthetic
     
   ggsave(filename = paste0("uvwind_", yrs, ".png"), plot = p, width = 10, height = 6, dpi = 300)
   print("Saved")
@@ -371,7 +363,6 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
 plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) {
   nc_data <- nc_open(file_path)
   
-  # Use the correct variable names from variable_mappings
   u_var <- variable_mappings[["u_component_of_wind"]]
   v_var <- variable_mappings[["v_component_of_wind"]]
   
@@ -380,19 +371,15 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
   lon <- ncvar_get(nc_data, "longitude")
   lat <- ncvar_get(nc_data, "latitude")
   
-  # Calculate the wind speed magnitude
   wind_speed <- sqrt(u_component^2 + v_component^2)
   
-  # Create a data frame for plotting
   data <- expand.grid(lon = lon, lat = lat)
   data$u_component <- as.vector(u_component)
   data$v_component <- as.vector(v_component)
   data$wind_speed <- as.vector(wind_speed)
   
-  # Close the NetCDF file
   nc_close(nc_data)
   
-  # Apply latitude and longitude limits if they are not NULL
   if (!is.null(lat_min) && !is.null(lat_max)) {
     data <- data[data$lat >= lat_min & data$lat <= lat_max, ]
   }
@@ -405,16 +392,14 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
     data <- array(data, dim = c(dim(data)[1] * dim(data)[2], dim(data)[3]))
     valid_time_subset <- rep(valid_time, each = dim(data)[1])
   } else if (length(dim(data)) == 2) {
-    # If it has no time dimension, use the data as is
+    # If it has no time dimension, use the data as is; this will only really apply when you take single timeframe datasets though
     data <- data
   } else {
     stop("Error: data does not have the expected number of dimensions")
   }
 
-  # Calculate averages using the calculate_averages function from Functions.r
   averaged_data <- calculate_averages(data)
   
-  # Plot the averaged wind speed magnitude
   p <- ggplot(averaged_data, aes(x = lon, y = lat, fill = wind_speed)) +
     geom_tile() +
     borders(
@@ -440,8 +425,7 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
       plot.margin = unit(c(0, 0, 0, 0), "cm")
     )
   
-  # Reduce the arrow frequency by averaging nearby arrows
-  grid_size <- 1  # Adjust this value as needed
+  grid_size <- 1  # Adjust this value (ususally likes to be below 0.5)
   arrow_data <- averaged_data %>%
     mutate(
       lon_bin = cut(lon, breaks = seq(min(lon), max(lon), by = grid_size)),
@@ -457,8 +441,7 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
     ) %>%
     ungroup()
   
-  # Scale arrow lengths by wind speed
-  arrow_scale <- 0.1  # Adjust this value as needed
+  arrow_scale <- 0.1  # Adjust this value for aesthetic
   p <- p + geom_segment(data = arrow_data, aes(x = lon, y = lat, xend = pmin(lon + u_component * arrow_scale, lon_max), yend = pmin(lat + v_component * arrow_scale, lat_max)),
                         arrow = arrow(length = unit(0.2, "cm")), color = "black")
   
