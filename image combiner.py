@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 import os
 
-ph = "C:\\Users\\Student\\Desktop\\Dissertation\\Data related"
+ph = "C:\\file_path"
 
-image1 = cv2.imread(os.path.join(ph, 'SUMMERTEMPGRAPH.png')) #temp top right is fitting
+image1 = cv2.imread(os.path.join(ph, 'whateverimage.png/jpg')) #temp top right is fitting
 image2 = cv2.imread(os.path.join(ph, 'SUMMERUGRAPH.png')) # U component slot
 image3 = cv2.imread(os.path.join(ph, 'SUMMERPGRAPH.png'))
 image4 = cv2.imread(os.path.join(ph, 'SUMMERVGRAPH.png')) # V component slot
@@ -34,6 +34,7 @@ annotation_width = 1200
 combined_image_ba = cv2.copyMakeBorder(combined_image_b, 0, 0, 0, annotation_width, cv2.BORDER_CONSTANT, value=(255, 255, 255))
 line_color = (255, 30, 0)  
 line_thickness = 15
+#cv2 line is essentially just (file, start, end, colour, thickness)
 cv2.line(combined_image_ba, (2*width, height//2), (2*width + annotation_width//4, height//4), line_color, line_thickness)
 cv2.line(combined_image_ba, (2*width, 3*height//2), (2*width + annotation_width//4, 1*height//4), line_color, line_thickness)
 font = cv2.FONT_HERSHEY_SIMPLEX
@@ -42,21 +43,12 @@ font_color = (0, 0, 0)
 font_thickness = 10
 font_scale2 = 1.5
 font_thickness2 = 5
+# the setup is (file, text, position on image, font, font size, colour, thickness)
 cv2.putText(combined_image_ba, 'U + V components', (2*width + annotation_width//4 + 10, height//2 - 500), font, font_scale, font_color, font_thickness)
 multi_line_text = [
-    "Wind can be split into 2 components",
-    "u represents the south to north",
-    "movement of wind whereas v accounts for",
-    "the west to east movement.",
-    "They can be combined into a single windspeed",
-    "component to see an overall magnitude",
-    "difference but when left in their individual",
-    "components you can see the change in wind",
-    "direction for an area. In this",
-    "case there is a positive increase in",
-    "u-component so an increase in winds from",
-    "the south, and a negative v-component",
-    "so an increase of winds from the east."
+"lines look like this", 
+"there is no support from cv2", 
+"for line splits with \n"
 ]
 y0 = height//4 + 50
 dy = 40 
