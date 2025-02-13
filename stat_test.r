@@ -1,6 +1,7 @@
 source("variables.r")
 
-ph <- "C:\\Users\\Student\\Desktop\\Dissertation\\Data related\\data-raw"
+ph <- "C:\\FILE_PATH\\"
+#Follows my naming scheme, fit to whatever needed
 MON <- "FEB"
 file_path <- paste0(ph, "\\", MON,"_UVT_1940_2024.nc")
 nc_data <- nc_open(file_path)
