@@ -3,10 +3,10 @@ source("variables.r")
 ph <- "C:\\FILE_PATH\\"
 #Follows my naming scheme, fit to whatever needed
 MON <- "FEB"
-file_path <- paste0(ph, "\\", MON,"_UVT_1940_2024.nc")
+file_path <- paste0(ph, "\\", MON,"_UVT_1940_2024.nc") # temp, u component and v component file; take from single levels
 nc_data <- nc_open(file_path)
-file_path2 <- paste0(ph, "\\", MON,"_P_1940_2024.nc")
-file_path3 <- paste0(ph, "\\", MON,"_S_1940_2024.nc")
+file_path2 <- paste0(ph, "\\", MON,"_P_1940_2024.nc") # precipitation file
+file_path3 <- paste0(ph, "\\", MON,"_S_1940_2024.nc") # snowfall file
 nc_data2 <- nc_open(file_path2)
 nc_data3 <- nc_open(file_path3)
 
