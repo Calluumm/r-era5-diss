@@ -1,10 +1,6 @@
 install.packages("ncdf4") # For reading the database
 install.packages("sp") # Spatial data library
-install.packages("RNetCDF") # Other NetCDF reader
 install.packages("pracma") # Mathematical dependency for EOF functions
-install.packages("pbapply") #so i can tell if things are actually happening
-# Can use rgdal if you find a supported fork of it but not recommended
-# install.packages("rgdal")
 install.packages("RNCEP") #to use the online version of the dataset
 install.packages("lubridate") #date formatting
 install.packages("sf") #use GIS shapefiles to plot to 
@@ -18,15 +14,12 @@ install.packages("ecmwfr") #api calling
 install.packages("geodata") #for GIS
 install.packages("terra") #raster data
 install.packages("devtools") #git imports
-devtools::install_github("renkun-ken/rlist") #maybe not needed
 
 
 library(ncdf4)
 library(sp)
-library(RNetCDF)
 library(pracma) # for Empirical Orthognal Function
 library(stats) # base library needed for Primary Component Analysis
-library(pbapply) # prog bar
 library(RNCEP) 
 library(lubridate)
 library(tidyverse)
@@ -40,8 +33,6 @@ library(ecmwfr)
 library(geodata)
 library(terra)
 library(devtools)
-library(rlist)
-
 # some of these might end up not needed but I'm using them while testing stuff will clean the list fully at a later date
 # below is a tiny script just for looking at the first chunk of data and its variables to get a better understanding
 # of whats what and what kind of numbers to expect (time is in unix, temperature in kelvin)
