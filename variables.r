@@ -17,6 +17,8 @@ variable_mappings <- list(
     temperature = "t",
     u_component_of_wind = "u",
     v_component_of_wind = "v",
+    u_component_of_wind2 = "u10",
+    v_component_of_wind2 = "v10",
     vertical_velocity = "w",
     vorticity = "vo",
     "2m_dewpoint_temperature" = "d2m",
@@ -37,8 +39,8 @@ variable_mappings <- list(
     snow_cover = "snc",
     snow_density = "rsn",
     snow_depth = "sd",
-    snow_depth_water_equivalent = "", #below to be filled
-    snowfall = "",
+    snow_depth_water_equivalent = "", #to be filled lower
+    snowfall = "sf",
     snowmelt = "",
     temperature_of_snow_layer = "",
     skin_reservoir_content = "",
@@ -65,8 +67,8 @@ variable_mappings <- list(
     total_evaporation = "",
     "10m_u_component_of_wind" = "",
     "10m_v_component_of_wind" = "",
-    surface_pressure = "",
-    total_precipitation = "",
+    surface_pressure = "Pa",
+    total_precipitation = "tp",
     leaf_area_index_high_vegetation = "",
     leaf_area_index_low_vegetation = ""
 )
@@ -98,7 +100,9 @@ variable_units <- list(
     lake_bottom_temperature = "K",
     lake_ice_depth = "m",
     lake_ice_temperature = "K",
-    lake_mix_layer_depth = "m"
+    lake_mix_layer_depth = "m",
+    total_precipitation = "mm",
+    snowfall = "m"
 )
 ######### dataset 1
 ##"reanalysis-era5-pressure-levels-monthly-means"
