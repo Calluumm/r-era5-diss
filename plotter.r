@@ -11,10 +11,10 @@ library(ggspatial)
 library(basemaps)
 library(prettymapr)
 library(sp)
-
+library(lubridate)
 basemaps::set_defaults(map_service = "esri", map_type = "world_imagery")
 
-# Function to list variables in a NetCDF file, debug tool primarily
+# Function to list variables in a NetCDF file
 list_nc_variables <- function(nc_file_path) {
   nc_data <- nc_open(nc_file_path)
   variables <- names(nc_data$var)
@@ -49,43 +49,61 @@ plot_smooth <- function(df, title, y_label, window_size) {
   print("saved")
 }
 
-plot_sd <- function(df, title, y_label, include_sd = TRUE, sd_factor = 1) {
+plot_sd <- function(nc_file_path1, nc_file_path2, vr, title, y_label) {
+  vr <- variable_mappings[[vr]]
+  nc_data1 <- nc_open(nc_file_path1)
+  time1 <- ncvar_get(nc_data1, "valid_time")
+  value1 <- ncvar_get(nc_data1, vr)
+  nc_close(nc_data1)
+  
+  nc_data2 <- nc_open(nc_file_path2)
+  time2 <- ncvar_get(nc_data2, "valid_time")
+  value2 <- ncvar_get(nc_data2, vr)
+  nc_close(nc_data2)
+
+  if (vr %in% c("t", "t2m")) {
+    value1 <- value1 - 273.15
+    value2 <- value2 - 273.15
+  }
+  if (vr %in% c("tp", "s")) {
+    value1 <- value1 * 1000 * 31
+    value2 <- value2 * 1000 * 28
+  }
+
+  time1 <- as.POSIXct(time1, origin = "1970-01-01", tz = "UTC")
+  time2 <- as.POSIXct(time2, origin = "1970-01-01", tz = "UTC")
+  
+  df1 <- data.frame(time = time1, value = value1, legend = "Summer (July)")
+  df2 <- data.frame(time = time2, value = value2, legend = "Winter (February)")  
+  df <- rbind(df1, df2)
+  
   df <- df %>%
-    mutate(year = format(time, "%Y")) %>%
-    group_by(year) %>%
-    summarise(
-      mean_value = mean(value, na.rm = TRUE),
-      sd_value = sd(value, na.rm = TRUE)
-    )
-  print("Data after summarise:")
-  print(df)
-  if (include_sd) {
-    df <- df %>%
-      mutate(
-        ymin = mean_value - sd_factor * sd_value,
-        ymax = mean_value + sd_factor * sd_value
-      )
-    print("Data after summarise:")
-    print(df)
-  }
+    mutate(year = year(time)) %>%
+    group_by(year, legend) %>%
+    summarise(mean_value = mean(value, na.rm = TRUE))
   
-  p <- ggplot(df, aes(x = as.numeric(year), y = mean_value)) +
-    geom_line(color = "blue") +
-    labs(title = title, x = "Year", y = y_label) +
-    theme_bw()
+  lm_model1 <- lm(mean_value ~ year, data = df[df$legend == "Summer (July)", ])
+  lm_model2 <- lm(mean_value ~ year, data = df[df$legend == "Winter (February)", ])
   
-  if (include_sd) {
-    p <- p + 
-      geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.2, fill = "blue") +
-      geom_line(aes(y = ymin), color = "blue", linetype = "dashed") +
-      geom_line(aes(y = ymax), color = "blue", linetype = "dashed")
-  }
+  slope1 <- coef(lm_model1)[2]
+  slope2 <- coef(lm_model2)[2]
   
-  filename <- paste0(vr, "_", yrs, "_average.png")
-  ggsave(filename, plot = p, width = 10, height = 6, dpi =300)
+  slope_text1 <- paste("Summer Rate of change: ", round(slope1, 4), " m/s per year", sep = "")
+  slope_text2 <- paste("Winter Rate of change: ", round(slope2, 4), " m/s per year", sep = "")
+  
+  # Plot the data
+  plot <- ggplot(df, aes(x = year, y = mean_value, color = legend)) +
+    geom_line() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = title, y = y_label, x = "Year") +
+    annotate("text", x = Inf, y = Inf, label = slope_text1, hjust = 1.9, vjust = 2, size = 5, color = "red", parse = FALSE) +
+    annotate("text", x = Inf, y = Inf, label = slope_text2, hjust = 1.95, vjust = 3.5, size = 5, color = "blue", parse = FALSE)
+  
+  # Save the plot
+  filename <- "plottedvr_best_fit.png"
+  ggsave(filename, plot = plot, width = 10, height = 6, dpi = 300)
   print(plot)
   print("saved")
-  return(p)
 }
 
 plot_shapefile <- function(file_path, vr) {
@@ -198,12 +216,12 @@ plot_shapefile_ranged <- function(file_path, vr, start_decade1, start_decade2) {
   avg_data2 <- calculate_average(nc_data, variable, start_decade2, start_decade2 + 9)
   diff_data <- avg_data2 - avg_data1
   
-  # Debug prints, remove comment when debugging
-  #print(paste("Latitude length:", length(lat)))
-  #print(paste("Longitude length:", length(lon)))
-  #print(paste("avg_data1 dimensions:", dim(avg_data1)))
-  #print(paste("avg_data2 dimensions:", dim(avg_data2)))
-  #print(paste("diff_data dimensions:", dim(diff_data)))
+  # Debug prints
+  print(paste("Latitude length:", length(lat)))
+  print(paste("Longitude length:", length(lon)))
+  print(paste("avg_data1 dimensions:", dim(avg_data1)))
+  print(paste("avg_data2 dimensions:", dim(avg_data2)))
+  print(paste("diff_data dimensions:", dim(diff_data)))
   
   if (is.vector(diff_data)) {
     diff_data <- matrix(diff_data, nrow = length(lat), ncol = length(lon))
@@ -248,11 +266,9 @@ plot_entire_average <- function(file_path, vr) {
   avg_data <- calculate_average(nc_data, variable_mappings[[vr]], min(years), max(years))
   nc_close(nc_data)
   
-  # Debug check for correct dimensions
   if (length(avg_data) != length(lat) * length(lon)) {
     stop("Dimensions of avg_data do not match the grid defined by lat and lon")
-  }
-  
+  }  
   plot_data <- expand.grid(lon = lon, lat = lat)
   plot_data$avg_data <- as.vector(avg_data)
   
@@ -284,6 +300,7 @@ plot_entire_average <- function(file_path, vr) {
 plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) {
   nc_data <- nc_open(file_path)
   
+  # Use the correct variable names from variable_mappings
   u_var <- variable_mappings[["u_component_of_wind"]]
   v_var <- variable_mappings[["v_component_of_wind"]]
   
@@ -298,8 +315,9 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
   data$u_component <- as.vector(u_component)
   data$v_component <- as.vector(v_component)
   data$wind_speed <- as.vector(wind_speed)
+  
   nc_close(nc_data)
-  #error checkpoints
+  
   if (!is.null(lat_min) && !is.null(lat_max)) {
     data <- data[data$lat >= lat_min & data$lat <= lat_max, ]
   }
@@ -333,7 +351,7 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
       plot.margin = unit(c(0, 0, 0, 0), "cm")
     )
   # Reduce the arrow frequency by averaging nearby arrows
-  grid_size <- 1  # Adjust this value to fit map aesthetic 
+  grid_size <- 1  # Adjust this value as needed
   arrow_data <- data %>%
     mutate(
       lon_bin = cut(lon, breaks = seq(min(lon), max(lon), by = grid_size)),
@@ -350,10 +368,10 @@ plot_wind_single <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max) 
     ungroup()
   
   # Scale arrow lengths by wind speed
-  arrow_scale <- 0.1  # Adjust this value to fit map layout n stuff
+  arrow_scale <- 0.1  # Adjust this value as needed
   p <- p + geom_segment(data = arrow_data, aes(x = lon, y = lat, xend = lon + u_component * arrow_scale, yend = lat + v_component * arrow_scale, size = wind_speed),
                         arrow = arrow(length = unit(0.2, "cm")), color = "black", show.legend = TRUE) +
-    scale_size_continuous(name = "Wind Speed", range = c(0.1, 1))  # Adjust the range to fit aesthetic
+    scale_size_continuous(name = "Wind Speed", range = c(0.1, 1))  # Adjust the range as needed
     
   ggsave(filename = paste0("uvwind_", yrs, ".png"), plot = p, width = 10, height = 6, dpi = 300)
   print("Saved")
@@ -380,6 +398,7 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
   
   nc_close(nc_data)
   
+  # Apply latitude and longitude limits if they are not NULL
   if (!is.null(lat_min) && !is.null(lat_max)) {
     data <- data[data$lat >= lat_min & data$lat <= lat_max, ]
   }
@@ -388,16 +407,13 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
   }
   
   if (length(dim(data)) == 3) {
-    # If it has a time dimension, reshape the data to associate each data point with the correct timestamp
     data <- array(data, dim = c(dim(data)[1] * dim(data)[2], dim(data)[3]))
     valid_time_subset <- rep(valid_time, each = dim(data)[1])
   } else if (length(dim(data)) == 2) {
-    # If it has no time dimension, use the data as is; this will only really apply when you take single timeframe datasets though
     data <- data
   } else {
     stop("Error: data does not have the expected number of dimensions")
   }
-
   averaged_data <- calculate_averages(data)
   
   p <- ggplot(averaged_data, aes(x = lon, y = lat, fill = wind_speed)) +
@@ -425,7 +441,8 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
       plot.margin = unit(c(0, 0, 0, 0), "cm")
     )
   
-  grid_size <- 1  # Adjust this value (ususally likes to be below 0.5)
+  # Reduce the arrow frequency by averaging nearby arrows
+  grid_size <- 1  # Adjust this value as needed
   arrow_data <- averaged_data %>%
     mutate(
       lon_bin = cut(lon, breaks = seq(min(lon), max(lon), by = grid_size)),
@@ -441,7 +458,7 @@ plot_wind_average <- function(file_path, vr, lat_min, lat_max, lon_min, lon_max)
     ) %>%
     ungroup()
   
-  arrow_scale <- 0.1  # Adjust this value for aesthetic
+  arrow_scale <- 0.1  # Adjust this value as needed
   p <- p + geom_segment(data = arrow_data, aes(x = lon, y = lat, xend = pmin(lon + u_component * arrow_scale, lon_max), yend = pmin(lat + v_component * arrow_scale, lat_max)),
                         arrow = arrow(length = unit(0.2, "cm")), color = "black")
   
@@ -495,4 +512,46 @@ plot_wind_sd <- function(file_path, vr) {
   print(p)
   print("Saved")
   return(p)
+}
+
+plot_monthly_overlay <- function(file_path, vr, valid_time) {
+  nc_data <- nc_open(file_path)
+  date <- valid_time
+  var <- variable_mappings[[vr]]
+  variable_data <- ncvar_get(nc_data, var)
+  nc_close(nc_data)
+
+  variable_data <- as.vector(variable_data)
+
+  if (var %in% c("t", "t2m")) {
+    variable_data <- variable_data - 273.15
+  }
+
+  data <- data.frame(date = date, value = variable_data)
+  data$month <- format(data$date, "%m")
+  data$year <- format(data$date, "%Y")
+  
+  monthly_stats <- data %>%
+    group_by(month) %>%
+    summarize(
+      avg_value = mean(value, na.rm = TRUE),
+      min_value = min(value, na.rm = TRUE),
+      max_value = max(value, na.rm = TRUE)
+    )
+  
+  max_month <- monthly_stats %>% filter(avg_value == max(avg_value))
+  min_month <- monthly_stats %>% filter(avg_value == min(avg_value))
+  
+  plot <- ggplot(monthly_stats, aes(x = as.numeric(month))) +
+    geom_line(aes(y = avg_value), color = "blue") +
+    scale_x_continuous(breaks = 1:12, labels = month.abb) +
+    labs(title = "Monthly Aggregate Temperature Average", x = "Month", y = "Temperature (°C)") +
+    theme_grey(base_size = 16) +
+    annotate("text", x = as.numeric(max_month$month), y = max_month$avg_value, 
+             label = paste("Max:", round(max_month$avg_value, 2), "°C"), vjust = 2, size = 6) +
+    annotate("text", x = as.numeric(min_month$month), y = min_month$avg_value, 
+             label = paste("Min:", round(min_month$avg_value, 2), "°C"), vjust = 1, size = 6)
+  
+  ggsave(plot = plot, filename = paste0(vr, "_monthly_overlay.png"), width = 10, height = 6, dpi = 300)
+  print(plot)
 }
